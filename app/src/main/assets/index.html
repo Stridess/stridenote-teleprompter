@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0A0A0A" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>StrideNote Teleprompter</title>
+<style>
+  :root{
+    --black:#0A0A0A; --white:#FAFAFA; --mist:#E9E9E9;
+    --yellow:#F4D03F; --blue:#5B8DEF; --panel:#141414; --line:#2a2a2a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--black);color:var(--white);
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+  #app{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  button,select,input{font-family:inherit;}
+  .mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    text-transform:uppercase;letter-spacing:.14em;font-size:11px;}
+
+  /* ---------- SETUP ---------- */
+  #setup{flex:1;overflow:auto;padding:22px;max-width:820px;margin:0 auto;width:100%;}
+  #setup h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:6px 0 2px;}
+  #setup h1 .pill{background:var(--yellow);color:#000;border-radius:6px;padding:0 8px;}
+  #setup p.sub{color:#9a9a9a;margin:0 0 18px;font-size:14px;}
+  textarea{width:100%;min-height:34vh;background:var(--panel);color:var(--white);
+    border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:15px;
+    line-height:1.5;resize:vertical;}
+  textarea:focus{outline:none;border-color:var(--blue);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+  .grow{flex:1;}
+  .btn{background:var(--panel);color:var(--white);border:1px solid var(--line);
+    border-radius:999px;padding:11px 18px;font-size:14px;cursor:pointer;font-weight:600;
+    display:inline-flex;align-items:center;gap:8px;}
+  .btn:hover{border-color:#3a3a3a;}
+  .btn.primary{background:var(--yellow);color:#000;border-color:var(--yellow);}
+  .btn.primary:hover{background:#ffdd55;}
+  .check{display:inline-flex;align-items:center;gap:8px;color:#cfcfcf;font-size:14px;cursor:pointer;}
+  .check input{width:18px;height:18px;accent-color:var(--yellow);}
+  .hint{color:#7b7b7b;font-size:12.5px;margin-top:14px;line-height:1.5;}
+
+  /* ---------- STAGE ---------- */
+  #stage{position:absolute;inset:0;display:none;background:var(--black);}
+  #viewport{position:absolute;inset:0;overflow:hidden;}
+  #content{position:relative;padding:50vh 8vw;font-size:48px;line-height:1.5;font-weight:600;}
+  #content p{margin:0 0 .7em;}
+  .seg{transition:opacity .12s ease, background .12s ease;}
+  /* highlight mode: dim everything, light up the current sentence */
+  #content.hl .seg{opacity:.30;}
+  #content.hl .seg.cur{opacity:1;background:rgba(244,208,63,.18);
+    -webkit-box-decoration-break:clone;box-decoration-break:clone;
+    padding:.02em .12em;border-radius:.1em;}
+  #readingline{position:absolute;left:0;right:0;top:40%;height:0;
+    border-top:2px solid rgba(244,208,63,.55);pointer-events:none;}
+  #readingline::before{content:"";position:absolute;left:0;top:-7px;border:7px solid transparent;
+    border-left-color:var(--yellow);}
+  #readingline::after{content:"";position:absolute;right:0;top:-7px;border:7px solid transparent;
+    border-right-color:var(--yellow);}
+
+  /* HUD top-left */
+  #hud{position:absolute;top:10px;left:12px;display:flex;gap:10px;align-items:center;
+    color:#bdbdbd;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:999px;
+    padding:6px 12px;backdrop-filter:blur(4px);}
+  #vmeterWrap{position:relative;width:84px;height:8px;background:#262626;border-radius:99px;
+    overflow:hidden;display:none;}
+  #vmeter{height:100%;width:0;background:var(--blue);transition:width .05s linear;}
+  #threshMarker{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--white);left:0;}
+  #status{font-size:11px;letter-spacing:.12em;text-transform:uppercase;min-width:74px;}
+  #status b{color:var(--yellow);}
+
+  /* controls bottom */
+  #controls{position:absolute;left:0;right:0;bottom:0;padding:12px 14px;
+    background:linear-gradient(0deg,rgba(0,0,0,.88),rgba(0,0,0,.4) 70%,transparent);
+    display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center;transition:opacity .3s;}
+  #controls.hidden{opacity:0;pointer-events:none;}
+  .ctl{display:flex;flex-direction:column;gap:3px;min-width:120px;}
+  .ctl label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8f8f8f;}
+  .ctl input[type=range]{width:140px;accent-color:var(--yellow);}
+  .iconbtn{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--white);
+    border-radius:12px;width:52px;height:48px;font-size:18px;cursor:pointer;display:flex;
+    align-items:center;justify-content:center;}
+  .iconbtn.on{background:var(--yellow);color:#000;border-color:var(--yellow);}
+  .iconbtn.play{width:64px;background:var(--yellow);color:#000;border-color:var(--yellow);font-size:22px;}
+  .spacer{flex:1;}
+  @media (max-width:640px){
+    #content{font-size:34px;padding:50vh 6vw;}
+    .ctl{min-width:100px;} .ctl input[type=range]{width:110px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SETUP -->
+  <section id="setup">
+    <h1><span class="pill">Stride</span>Note Teleprompter</h1>
+    <p class="sub">Paste a script or open a file, then read. Voice control scrolls while you speak; the current line is highlighted.</p>
+
+    <textarea id="scriptInput" placeholder="Paste your script here. You can paste a full .md script (with [BEAT] labels and sources) and keep Clean markdown on, or paste a plain teleprompter."></textarea>
+
+    <div class="row">
+      <button class="btn" id="openFileBtn">Open .md / .txt file</button>
+      <input type="file" id="fileInput" accept=".md,.txt,.markdown,text/plain" hidden />
+      <label class="check"><input type="checkbox" id="cleanMd" checked /> Clean markdown (hide #, [BEAT], links, sources)</label>
+      <span class="grow"></span>
+      <button class="btn primary" id="startBtn">Start teleprompter →</button>
+    </div>
+
+    <p class="hint">
+      Once reading: <b>Space</b> play/pause · <b>↑ / ↓</b> speed · <b>M</b> mirror · <b>H</b> highlight · <b>R</b> restart · <b>F</b> fullscreen · <b>Esc / E</b> edit · tap screen to hide controls.<br/>
+      Voice control needs mic permission (works best in Chrome). Turn it on, then tap <b>Calibrate</b> and read for two seconds so it learns your voice. Everything runs locally.
+    </p>
+  </section>
+
+  <!-- STAGE -->
+  <section id="stage">
+    <div id="viewport"><div id="content"></div></div>
+    <div id="readingline"></div>
+
+    <div id="hud">
+      <span id="status" class="mono">Paused</span>
+      <div id="vmeterWrap"><div id="vmeter"></div><div id="threshMarker"></div></div>
+      <span id="timeLeft" class="mono"></span>
+    </div>
+
+    <div id="controls">
+      <button class="iconbtn play" id="playBtn" title="Play / Pause (Space)">▶</button>
+      <button class="iconbtn" id="restartBtn" title="Restart (R)">⟲</button>
+
+      <div class="ctl">
+        <label>Speed <span id="speedVal" class="mono"></span></label>
+        <input type="range" id="speed" min="10" max="220" value="70" />
+      </div>
+      <div class="ctl">
+        <label>Font <span id="fontVal" class="mono"></span></label>
+        <input type="range" id="font" min="22" max="96" value="48" />
+      </div>
+      <div class="ctl">
+        <label>Width <span id="widthVal" class="mono"></span></label>
+        <input type="range" id="width" min="40" max="100" value="84" />
+      </div>
+
+      <button class="iconbtn" id="hlBtn" title="Highlight current line (H)">🖍</button>
+      <button class="iconbtn" id="voiceBtn" title="Voice control: scroll while you speak">🎤</button>
+      <button class="btn" id="calBtn" title="Learn your voice level" style="display:none;height:48px">Calibrate</button>
+      <div class="ctl" id="sensWrap" style="display:none">
+        <label>Mic sensitivity</label>
+        <input type="range" id="sens" min="1" max="20" value="13" />
+      </div>
+
+      <button class="iconbtn" id="mirrorBtn" title="Mirror (M)">⇋</button>
+      <button class="iconbtn" id="flipBtn" title="Flip vertical">⇅</button>
+      <button class="iconbtn" id="fsBtn" title="Fullscreen (F)">⛶</button>
+
+      <span class="spacer"></span>
+      <button class="iconbtn" id="editBtn" title="Back to edit (Esc)">✎</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k,d){ try{ const v=localStorage.getItem("snprompt_"+k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
+    set(k,v){ try{ localStorage.setItem("snprompt_"+k, JSON.stringify(v)); }catch(e){} }
+  };
+
+  const setup=$("setup"), stage=$("stage"), viewport=$("viewport"), content=$("content");
+  const controls=$("controls"), statusEl=$("status"), timeLeft=$("timeLeft");
+  const speed=$("speed"), font=$("font"), width=$("width"), sens=$("sens");
+  const speedVal=$("speedVal"), fontVal=$("fontVal"), widthVal=$("widthVal");
+  const playBtn=$("playBtn"), voiceBtn=$("voiceBtn"), mirrorBtn=$("mirrorBtn"),
+        flipBtn=$("flipBtn"), fsBtn=$("fsBtn"), editBtn=$("editBtn"), restartBtn=$("restartBtn"),
+        hlBtn=$("hlBtn"), calBtn=$("calBtn");
+  const vmeterWrap=$("vmeterWrap"), vmeter=$("vmeter"), threshMarker=$("threshMarker"), sensWrap=$("sensWrap");
+
+  speed.value=store.get("speed",70); font.value=store.get("font",48);
+  width.value=store.get("width",84); sens.value=store.get("sens",13);
+  $("cleanMd").checked=store.get("cleanMd",true);
+  let hlOn=store.get("hl",true);
+
+  let playing=false, mirror=false, flip=false;
+  let pos=0, lastT=0, raf=null;
+  let voiceOn=false, speaking=false, audioCtx=null, analyser=null, micStream=null, lastVoice=0, vData=null;
+  let emaRms=0, noiseFloor=2, calibrating=false;
+
+  // ---------- markdown cleaner ----------
+  function cleanMarkdown(text){
+    text=text.replace(/^---[\s\S]*?\n---\s*\n/,"");
+    const out=[];
+    for(let line of text.split("\n")){
+      const s=line.trim();
+      if(/^#{1,6}\s*sources/i.test(s)) break;
+      if(s==="---") continue;
+      if(/^#{1,6}\s*\[/.test(s)) continue;
+      if(/^#{1,6}\s/.test(s)) continue;
+      if(/^find us everywhere @stridenote/i.test(s)) continue;
+      out.push(line);
+    }
+    let t=out.join("\n");
+    t=t.replace(/\[([^\]]+)\]\((?:[^)]+)\)/g,"$1");
+    t=t.replace(/[*_`>]/g,"");
+    t=t.replace(/^\s*[-+]\s+/gm,"");
+    t=t.replace(/\n{3,}/g,"\n\n");
+    return t.trim();
+  }
+
+  // split into sentence segments for highlighting
+  function buildContent(raw){
+    const txt=$("cleanMd").checked?cleanMarkdown(raw):raw;
+    content.innerHTML="";
+    txt.split(/\n{2,}/).forEach(par=>{
+      const line=par.replace(/\n/g," ").trim();
+      if(!line) return;
+      const p=document.createElement("p");
+      const parts=line.match(/[^.!?]+[.!?]*\s*|\S.*$/g)||[line];
+      parts.forEach(seg=>{
+        const sp=document.createElement("span");
+        sp.className="seg"; sp.textContent=seg;
+        p.appendChild(sp);
+      });
+      content.appendChild(p);
+    });
+    if(!content.children.length){
+      const p=document.createElement("p");
+      const sp=document.createElement("span"); sp.className="seg"; sp.textContent="(Empty script)";
+      p.appendChild(sp); content.appendChild(p);
+    }
+  }
+
+  // ---------- layout / highlight ----------
+  let segs=[], curIdx=-1;
+  function applyStyle(){
+    content.style.fontSize=font.value+"px";
+    content.style.paddingLeft=content.style.paddingRight=((100-width.value)/2)+"vw";
+    content.style.transform="scale("+(mirror?-1:1)+","+(flip?-1:1)+")";
+    content.classList.toggle("hl",hlOn);
+    speedVal.textContent=speed.value; fontVal.textContent=font.value+"px"; widthVal.textContent=width.value+"%";
+  }
+  function measureSegs(){
+    segs=Array.prototype.map.call(content.querySelectorAll(".seg"),el=>({el,top:el.offsetTop,bottom:el.offsetTop+el.offsetHeight}));
+    curIdx=-1;
+  }
+  function updateHighlight(){
+    if(!hlOn||!segs.length) return;
+    const y=viewport.scrollTop+viewport.clientHeight*0.40;
+    let i=curIdx<0?0:curIdx;
+    while(i<segs.length-1 && segs[i].bottom<y) i++;
+    while(i>0 && segs[i].top>y) i--;
+    if(i!==curIdx){
+      if(curIdx>=0&&segs[curIdx]) segs[curIdx].el.classList.remove("cur");
+      segs[i].el.classList.add("cur"); curIdx=i;
+    }
+  }
+  function clearHighlight(){
+    if(curIdx>=0&&segs[curIdx]) segs[curIdx].el.classList.remove("cur");
+    curIdx=-1;
+  }
+  function maxScroll(){ return Math.max(0,content.scrollHeight-viewport.clientHeight); }
+
+  function estimate(){
+    const total=maxScroll(), remain=Math.max(0,total-pos);
+    const secs=speed.value>0?remain/speed.value:0;
+    const m=Math.floor(secs/60), s=Math.round(secs%60);
+    timeLeft.textContent=segs.length?("~"+m+":"+String(s).padStart(2,"0")+" left"):"";
+  }
+
+  function frame(t){
+    if(!lastT) lastT=t;
+    const dt=Math.min(0.1,(t-lastT)/1000); lastT=t;
+    const advance = playing && (!voiceOn || speaking);
+    if(advance){
+      pos+=speed.value*dt;
+      const mx=maxScroll();
+      if(pos>=mx){ pos=mx; setPlaying(false); }
+      viewport.scrollTop=pos;
+    }
+    updateHighlight(); estimate();
+    raf=requestAnimationFrame(frame);
+  }
+  function startLoop(){ if(!raf){ lastT=0; raf=requestAnimationFrame(frame);} }
+  function stopLoop(){ if(raf){ cancelAnimationFrame(raf); raf=null; } }
+
+  function setStatus(){
+    if(!playing){ statusEl.innerHTML="Paused"; return; }
+    if(voiceOn) statusEl.innerHTML=speaking?"<b>Speaking</b>":"Listening…";
+    else statusEl.innerHTML="<b>Rolling</b>";
+  }
+  function setPlaying(v){ playing=v; playBtn.textContent=v?"❚❚":"▶"; setStatus(); }
+
+  // ---------- voice activity (mic-paced scroll) ----------
+  function rmsNow(){
+    analyser.getByteTimeDomainData(vData);
+    let sum=0; for(let i=0;i<vData.length;i++){ const d=(vData[i]-128)/128; sum+=d*d; }
+    return Math.sqrt(sum/vData.length)*100;
+  }
+  async function enableVoice(){
+    try{
+      micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      if(audioCtx.state==="suspended") await audioCtx.resume();
+      const src=audioCtx.createMediaStreamSource(micStream);
+      analyser=audioCtx.createAnalyser(); analyser.fftSize=512; vData=new Uint8Array(analyser.fftSize);
+      src.connect(analyser);
+      voiceOn=true; voiceBtn.classList.add("on"); sensWrap.style.display=""; calBtn.style.display="";
+      vmeterWrap.style.display=""; emaRms=0; noiseFloor=2; setPlaying(true); tickVoice();
+    }catch(e){
+      voiceOn=false; voiceBtn.classList.remove("on"); statusEl.innerHTML="Mic blocked";
+      alert("Could not access the microphone.\n\nVoice control needs the file opened in Chrome with mic permission allowed (it will not work inside a chat preview). The rest of the teleprompter works without it.");
+    }
+  }
+  function disableVoice(){
+    voiceOn=false; voiceBtn.classList.remove("on"); sensWrap.style.display="none"; calBtn.style.display="none";
+    vmeterWrap.style.display="none";
+    if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+    if(audioCtx){ audioCtx.close(); audioCtx=null; }
+    setStatus();
+  }
+  function tickVoice(){
+    if(!voiceOn) return;
+    const rms=rmsNow();
+    emaRms=emaRms*0.78+rms*0.22;                       // smooth
+    if(emaRms<noiseFloor) noiseFloor=noiseFloor*0.9+emaRms*0.1;     // adapt down fast
+    else noiseFloor=noiseFloor*0.995+emaRms*0.005;                 // creep up slowly
+    const margin=(21-parseFloat(sens.value))*0.45;     // higher sensitivity => smaller margin
+    const thr=noiseFloor+Math.max(0.6,margin);
+    vmeter.style.width=Math.min(100,emaRms*4.5)+"%";
+    threshMarker.style.left=Math.min(100,thr*4.5)+"%";
+    if(!calibrating){
+      if(emaRms>thr){ speaking=true; lastVoice=performance.now(); vmeter.style.background="var(--yellow)"; }
+      else if(performance.now()-lastVoice>600){ speaking=false; vmeter.style.background="var(--blue)"; }
+      setStatus();
+    }
+    requestAnimationFrame(tickVoice);
+  }
+  function calibrate(){
+    if(!voiceOn) return;
+    calibrating=true; speaking=false; statusEl.innerHTML="<b>Read now…</b>";
+    const samples=[]; const t0=performance.now();
+    (function grab(){
+      samples.push(emaRms);
+      if(performance.now()-t0<2200){ requestAnimationFrame(grab); }
+      else{
+        samples.sort((a,b)=>a-b);
+        const spk=samples[Math.floor(samples.length*0.6)]||emaRms;   // typical speaking level
+        const wantMargin=Math.max(0.6,(spk-noiseFloor)*0.45);
+        let s=21-(wantMargin/0.45); s=Math.max(1,Math.min(20,Math.round(s)));
+        sens.value=s; store.set("sens",s);
+        calibrating=false; statusEl.innerHTML="Calibrated"; lastVoice=performance.now();
+      }
+    })();
+  }
+
+  // ---------- mode switching ----------
+  function startTeleprompter(){
+    buildContent($("scriptInput").value||"");
+    setup.style.display="none"; stage.style.display="block";
+    applyStyle(); pos=0; viewport.scrollTop=0; setPlaying(false);
+    requestAnimationFrame(()=>{ measureSegs(); updateHighlight(); });
+    startLoop();
+  }
+  function backToEdit(){
+    setPlaying(false); stopLoop(); disableVoice();
+    stage.style.display="none"; setup.style.display="block";
+  }
+  function toggleFullscreen(){
+    const el=document.documentElement;
+    if(!document.fullscreenElement){ (el.requestFullscreen||el.webkitRequestFullscreen).call(el); }
+    else { (document.exitFullscreen||document.webkitExitFullscreen).call(document); }
+  }
+
+  // ---------- events ----------
+  $("startBtn").onclick=startTeleprompter;
+  $("openFileBtn").onclick=()=>$("fileInput").click();
+  $("fileInput").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader(); r.onload=()=>{ $("scriptInput").value=r.result; }; r.readAsText(f); };
+  $("cleanMd").onchange=()=>store.set("cleanMd",$("cleanMd").checked);
+
+  playBtn.onclick=()=>setPlaying(!playing);
+  restartBtn.onclick=()=>{ pos=0; viewport.scrollTop=0; curIdx=-1; };
+  editBtn.onclick=backToEdit;
+  hlBtn.onclick=()=>{ hlOn=!hlOn; store.set("hl",hlOn); content.classList.toggle("hl",hlOn);
+    hlBtn.classList.toggle("on",hlOn); if(!hlOn) clearHighlight(); else { curIdx=-1; updateHighlight(); } };
+  mirrorBtn.onclick=()=>{ mirror=!mirror; mirrorBtn.classList.toggle("on",mirror); applyStyle(); };
+  flipBtn.onclick=()=>{ flip=!flip; flipBtn.classList.toggle("on",flip); applyStyle(); };
+  fsBtn.onclick=toggleFullscreen;
+  voiceBtn.onclick=()=>{ voiceOn?disableVoice():enableVoice(); };
+  calBtn.onclick=calibrate;
+
+  function reflow(){ applyStyle(); requestAnimationFrame(()=>{ measureSegs(); updateHighlight(); }); }
+  speed.oninput=()=>{ speedVal.textContent=speed.value; store.set("speed",+speed.value); };
+  font.oninput =()=>{ store.set("font",+font.value); reflow(); };
+  width.oninput=()=>{ store.set("width",+width.value); reflow(); };
+  sens.oninput =()=>store.set("sens",+sens.value);
+  window.addEventListener("resize",()=>{ requestAnimationFrame(()=>{ measureSegs(); }); });
+
+  viewport.addEventListener("click",()=>controls.classList.toggle("hidden"));
+
+  document.addEventListener("keydown",e=>{
+    if(stage.style.display==="none") return;
+    if(e.code==="Space"){ e.preventDefault(); setPlaying(!playing); }
+    else if(e.key==="ArrowUp"){ e.preventDefault(); speed.value=Math.min(220,+speed.value+8); speed.oninput(); }
+    else if(e.key==="ArrowDown"){ e.preventDefault(); speed.value=Math.max(10,+speed.value-8); speed.oninput(); }
+    else if(e.key==="m"||e.key==="M") mirrorBtn.click();
+    else if(e.key==="h"||e.key==="H") hlBtn.click();
+    else if(e.key==="r"||e.key==="R") restartBtn.click();
+    else if(e.key==="f"||e.key==="F") toggleFullscreen();
+    else if(e.key==="e"||e.key==="E"||e.key==="Escape") backToEdit();
+  });
+
+  hlBtn.classList.toggle("on",hlOn);
+  applyStyle();
+})();
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
