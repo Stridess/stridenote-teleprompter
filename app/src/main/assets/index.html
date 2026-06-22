@@ -89,6 +89,7 @@
   .ic.on{color:var(--yellow);}
   .ic.play{color:#000;background:var(--yellow);width:54px;}
   .ic.play:hover{background:#ffdd55;}
+  .ic svg{width:23px;height:23px;}
 
   #peek{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:6;
     background:rgba(0,0,0,.55);border:1px solid var(--line);color:#cfcfcf;border-radius:999px;
@@ -122,7 +123,7 @@
 
     <p class="hint">
       While reading: tap the screen to hide or show the controls. The bar auto-hides a few seconds after you start.<br/>
-      Voice control (the 🎤) scrolls while you speak and pauses when you stop. It needs microphone permission. Everything runs on your device.
+      Voice control (the mic) scrolls while you speak and pauses when you stop. It needs microphone permission. Everything runs on your device.
     </p>
   </section>
 
@@ -151,14 +152,14 @@
 
     <!-- slim bottom bar -->
     <div id="bar">
-      <button class="ic" id="editBtn" title="Back to edit (Esc)">✎</button>
-      <button class="ic play" id="playBtn" title="Play / Pause (Space)">▶</button>
-      <button class="ic" id="restartBtn" title="Restart (R)">⟲</button>
-      <button class="ic" id="mirrorBtn" title="Mirror for glass (M)">⇋</button>
-      <button class="ic on" id="hlBtn" title="Highlight band (H)">🖍</button>
-      <button class="ic" id="voiceBtn" title="Voice control">🎤</button>
-      <button class="ic" id="fsBtn" title="Fullscreen (F)">⛶</button>
-      <button class="ic" id="gearBtn" title="Settings">⚙</button>
+      <button class="ic" id="editBtn" title="Back to edit (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+      <button class="ic play" id="playBtn" title="Play / Pause (Space)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
+      <button class="ic" id="restartBtn" title="Restart (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+      <button class="ic" id="mirrorBtn" title="Mirror for glass (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7 5 5-5 5V7"/><path d="m21 7-5 5 5 5V7"/><path d="M12 2v2"/><path d="M12 8v2"/><path d="M12 14v2"/><path d="M12 20v2"/></svg></button>
+      <button class="ic on" id="hlBtn" title="Highlight band (H)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg></button>
+      <button class="ic" id="voiceBtn" title="Voice control"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
+      <button class="ic" id="fsBtn" title="Fullscreen (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+      <button class="ic" id="gearBtn" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </section>
 </div>
@@ -166,6 +167,8 @@
 <script>
 (function(){
   "use strict";
+  const ICON_PLAY='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>';
+  const ICON_PAUSE='<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
   const $ = id => document.getElementById(id);
   const store = {
     get(k,d){ try{ const v=localStorage.getItem("snprompt_"+k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
@@ -260,7 +263,7 @@
     if(voiceOn) statusEl.innerHTML=speaking?"<b>Speaking</b>":"Listening";
     else statusEl.innerHTML="<b>Rolling</b>";
   }
-  function setPlaying(v){ playing=v; playBtn.textContent=v?"❚❚":"▶"; setStatus(); if(v) scheduleHideBar(); else showBar(); }
+  function setPlaying(v){ playing=v; playBtn.innerHTML=v?ICON_PAUSE:ICON_PLAY; setStatus(); if(v) scheduleHideBar(); else showBar(); }
 
   function showBar(){
     bar.classList.remove("hidden"); stage.classList.remove("barhidden");
