@@ -73,9 +73,6 @@
   .ctl label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#9a9a9a;width:104px;flex:none;}
   .ctl input[type=range]{flex:1;accent-color:var(--yellow);}
   .ctl .val{width:52px;text-align:right;color:#cfcfcf;font-size:12px;}
-  .pillbtn{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--white);
-    border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer;}
-  .pillbtn.on{background:var(--yellow);color:#000;border-color:var(--yellow);}
 
   /* slim bottom control bar */
   #bar{position:absolute;left:0;right:0;bottom:0;height:62px;z-index:6;
@@ -98,7 +95,8 @@
 
   @media (max-width:640px){
     #content{font-size:32px;padding:30vh 6vw 85vh;}
-    .ic{font-size:19px;width:38px;}
+    .ic{font-size:19px;width:34px;}
+    #bar{padding:0 2px;}
     .ctl label{width:92px;}
   }
 </style>
@@ -147,7 +145,6 @@
       <div class="ctl"><label>Font</label><input type="range" id="font" min="22" max="100" value="46" /><span class="val" id="fontVal"></span></div>
       <div class="ctl"><label>Width</label><input type="range" id="width" min="40" max="100" value="86" /><span class="val" id="widthVal"></span></div>
       <div class="ctl" id="sensRow" style="display:none"><label>Mic sensitivity</label><input type="range" id="sens" min="1" max="20" value="13" /><span class="val"></span></div>
-      <div class="ctl"><label>Flip vertical</label><button class="pillbtn" id="flipBtn">Off</button><span class="grow"></span></div>
     </div>
 
     <!-- slim bottom bar -->
@@ -155,7 +152,8 @@
       <button class="ic" id="editBtn" title="Back to edit (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
       <button class="ic play" id="playBtn" title="Play / Pause (Space)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
       <button class="ic" id="restartBtn" title="Restart (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-      <button class="ic" id="mirrorBtn" title="Mirror for glass (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7 5 5-5 5V7"/><path d="m21 7-5 5 5 5V7"/><path d="M12 2v2"/><path d="M12 8v2"/><path d="M12 14v2"/><path d="M12 20v2"/></svg></button>
+      <button class="ic" id="mirrorBtn" title="Flip left-right / mirror (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7 5 5-5 5V7"/><path d="m21 7-5 5 5 5V7"/><path d="M12 2v2"/><path d="M12 8v2"/><path d="M12 14v2"/><path d="M12 20v2"/></svg></button>
+      <button class="ic" id="flipBtn" title="Flip up-down (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 3-5 5-5-5h10"/><path d="m17 21-5-5-5 5h10"/><path d="M4 12H2"/><path d="M10 12H8"/><path d="M16 12h-2"/><path d="M22 12h-2"/></svg></button>
       <button class="ic on" id="hlBtn" title="Highlight band (H)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg></button>
       <button class="ic" id="voiceBtn" title="Voice control"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
       <button class="ic" id="fsBtn" title="Fullscreen (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
@@ -389,7 +387,7 @@
   editBtn.onclick=backToEdit;
   hlBtn.onclick=()=>{ bandOn=!bandOn; store.set("band",bandOn); band.classList.toggle("off",!bandOn); hlBtn.classList.toggle("on",bandOn); };
   mirrorBtn.onclick=()=>{ mirror=!mirror; mirrorBtn.classList.toggle("on",mirror); applyStyle(); };
-  flipBtn.onclick=()=>{ flip=!flip; flipBtn.classList.toggle("on",flip); flipBtn.textContent=flip?"On":"Off"; applyStyle(); resetPanelTimer(); };
+  flipBtn.onclick=()=>{ flip=!flip; flipBtn.classList.toggle("on",flip); applyStyle(); };
   fsBtn.onclick=toggleFullscreen;
   voiceBtn.onclick=()=>{ voiceOn?disableVoice():enableVoice(); };
   gearBtn.onclick=()=>{ panel.classList.contains("open")?closePanel():openPanel(); };
@@ -409,6 +407,7 @@
     else if(e.key==="ArrowUp"){ e.preventDefault(); speed.value=Math.min(220,+speed.value+8); speed.oninput(); }
     else if(e.key==="ArrowDown"){ e.preventDefault(); speed.value=Math.max(10,+speed.value-8); speed.oninput(); }
     else if(e.key==="m"||e.key==="M") mirrorBtn.click();
+    else if(e.key==="v"||e.key==="V") flipBtn.click();
     else if(e.key==="h"||e.key==="H") hlBtn.click();
     else if(e.key==="r"||e.key==="R") restartBtn.click();
     else if(e.key==="f"||e.key==="F") toggleFullscreen();
