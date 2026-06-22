@@ -49,8 +49,9 @@
 
   /* the single fixed highlight band. text scrolls THROUGH it. */
   #band{position:absolute;left:0;right:0;z-index:2;pointer-events:none;
-    background:rgba(91,141,239,.20);
-    border-top:1px solid rgba(91,141,239,.65);border-bottom:1px solid rgba(91,141,239,.65);}
+    background:rgba(91,141,239,.30);
+    border-top:3px solid rgba(120,165,255,1);border-bottom:3px solid rgba(120,165,255,1);
+    box-shadow:0 0 14px rgba(91,141,239,.55);}
   #band.off{display:none;}
 
   /* HUD top-left status */
@@ -73,6 +74,9 @@
   .ctl label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#9a9a9a;width:104px;flex:none;}
   .ctl input[type=range]{flex:1;accent-color:var(--yellow);}
   .ctl .val{width:52px;text-align:right;color:#cfcfcf;font-size:12px;}
+  .pillbtn{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--white);
+    border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer;}
+  .pillbtn.on{background:var(--yellow);color:#000;border-color:var(--yellow);}
 
   /* slim bottom control bar */
   #bar{position:absolute;left:0;right:0;bottom:0;height:62px;z-index:6;
@@ -121,7 +125,7 @@
 
     <p class="hint">
       While reading: tap the screen to hide or show the controls. The bar auto-hides a few seconds after you start.<br/>
-      Voice control (the mic) scrolls while you speak and pauses when you stop. It needs microphone permission. Everything runs on your device.
+      Voice control (the 🎤) scrolls while you speak and pauses when you stop. It needs microphone permission. Everything runs on your device.
     </p>
   </section>
 
@@ -193,6 +197,7 @@
 
   function lp(){ return parseFloat(linePos.value)/100; }
 
+  // ---------- markdown cleaner ----------
   function cleanMarkdown(text){
     text=text.replace(/^---[\s\S]*?\n---\s*\n/,"");
     const out=[];
@@ -222,11 +227,13 @@
     if(!content.children.length){ const p=document.createElement("p"); p.textContent="(Empty script)"; content.appendChild(p); }
   }
 
+  // ---------- layout ----------
   function applyStyle(){
     content.style.fontSize=font.value+"px";
     content.style.paddingLeft=content.style.paddingRight=((100-width.value)/2)+"vw";
     content.style.paddingTop=(lp()*100)+"vh";
     content.style.transform="scale("+(mirror?-1:1)+","+(flip?-1:1)+")";
+    // fixed highlight band: one line tall, centred on the reading line
     const bh=Math.round(font.value*1.5);
     band.style.height=bh+"px";
     band.style.top="calc("+(lp()*100)+"% - "+(bh/2)+"px)";
@@ -240,6 +247,7 @@
     const m=Math.floor(secs/60), s=Math.round(secs%60);
     timeLeft.textContent=content.children.length?("~"+m+":"+String(s).padStart(2,"0")):"";
   }
+
   function frame(t){
     if(!lastT) lastT=t;
     const dt=Math.min(0.1,(t-lastT)/1000); lastT=t;
@@ -263,6 +271,7 @@
   }
   function setPlaying(v){ playing=v; playBtn.innerHTML=v?ICON_PAUSE:ICON_PLAY; setStatus(); if(v) scheduleHideBar(); else showBar(); }
 
+  // ---------- bar show / hide ----------
   function showBar(){
     bar.classList.remove("hidden"); stage.classList.remove("barhidden");
     if(barTimer){ clearTimeout(barTimer); barTimer=null; }
@@ -277,9 +286,10 @@
     barTimer=setTimeout(()=>{ if(playing && !panel.classList.contains("open")) hideBar(); }, 3500);
   }
 
+  // ---------- settings panel: open from gear, auto-close 5s after last touch ----------
   function openPanel(){
     showBar(); panel.classList.add("open"); gearBtn.classList.add("on");
-    if(barTimer){ clearTimeout(barTimer); barTimer=null; }
+    if(barTimer){ clearTimeout(barTimer); barTimer=null; }      // keep bar while panel open
     resetPanelTimer();
   }
   function closePanel(){
@@ -295,6 +305,7 @@
   panel.addEventListener("input", resetPanelTimer);
   panel.addEventListener("pointerdown", resetPanelTimer);
 
+  // ---------- voice activity ----------
   function rmsNow(){
     analyser.getByteTimeDomainData(vData);
     let sum=0; for(let i=0;i<vData.length;i++){ const d=(vData[i]-128)/128; sum+=d*d; }
@@ -336,6 +347,7 @@
     requestAnimationFrame(tickVoice);
   }
 
+  // ---------- mode switching ----------
   function startTeleprompter(){
     buildContent($("scriptInput").value||"");
     setup.style.display="none"; stage.style.display="block";
@@ -352,6 +364,7 @@
     else { (document.exitFullscreen||document.webkitExitFullscreen).call(document); }
   }
 
+  // ---------- events ----------
   $("startBtn").onclick=startTeleprompter;
   $("openFileBtn").onclick=()=>$("fileInput").click();
   function loadScript(src){ return new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src=src; sc.onload=res; sc.onerror=()=>rej(new Error("load failed")); document.head.appendChild(sc); }); }
@@ -372,7 +385,7 @@
       for(let i=1;i<=pdf.numPages;i++){ const pg=await pdf.getPage(i); const tc=await pg.getTextContent(); text+=tc.items.map(s=>s.str).join(" ")+"\n\n"; }
       return text;
     }
-    return await f.text();
+    return await f.text();   // .txt / .md
   }
   $("fileInput").onchange=async e=>{
     const f=e.target.files[0]; if(!f) return;
