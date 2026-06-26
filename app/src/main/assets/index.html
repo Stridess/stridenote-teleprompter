@@ -43,7 +43,9 @@
 
   /* ---------- STAGE ---------- */
   #stage{position:absolute;inset:0;display:none;background:var(--black);}
-  #viewport{position:absolute;inset:0;overflow:hidden;z-index:1;}
+  #viewport{position:absolute;inset:0;overflow:hidden;z-index:1;
+    touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;}
+  #viewport.dragging{cursor:grabbing;}
   #content{position:relative;padding:30vh 7vw 85vh;font-size:46px;line-height:1.5;font-weight:600;}
   #content p{margin:0 0 .7em;}
 
@@ -124,7 +126,7 @@
     </div>
 
     <p class="hint">
-      While reading: tap the screen to hide or show the controls. The bar auto-hides a few seconds after you start.<br/>
+      While reading: tap the screen to hide or show the controls, or drag up and down on the text to move back and forward. The bar auto-hides a few seconds after you start.<br/>
       Voice control (the 🎤) scrolls while you speak and pauses when you stop. It needs microphone permission. Everything runs on your device.
     </p>
   </section>
@@ -191,7 +193,7 @@
   let bandOn=store.get("band",true);
 
   let playing=false, mirror=false, flip=false;
-  let pos=0, lastT=0, raf=null, barTimer=null, panelTimer=null;
+  let pos=0, lastT=0, raf=null, barTimer=null, panelTimer=null, dragging=false;
   let voiceOn=false, speaking=false, audioCtx=null, analyser=null, micStream=null, lastVoice=0, vData=null;
   let emaRms=0, noiseFloor=2;
 
@@ -251,7 +253,7 @@
   function frame(t){
     if(!lastT) lastT=t;
     const dt=Math.min(0.1,(t-lastT)/1000); lastT=t;
-    const advance = playing && (!voiceOn || speaking);
+    const advance = playing && (!voiceOn || speaking) && !dragging;
     if(advance){
       pos+=speed.value*dt;
       const mx=maxScroll();
@@ -411,7 +413,31 @@
   linePos.oninput=()=>{ store.set("linePos",+linePos.value); applyStyle(); };
   sens.oninput =()=>store.set("sens",+sens.value);
 
-  viewport.addEventListener("click",()=>{ if(bar.classList.contains("hidden")) showBar(); else { closePanel(); hideBar(); } });
+  // ---------- drag to scrub (touch + mouse): drag down = back, drag up = forward ----------
+  let pDown=false, dragStartY=0, dragStartPos=0, dragMoved=false;
+  const DRAG_THRESH=6;
+  viewport.addEventListener("pointerdown",e=>{
+    pDown=true; dragMoved=false; dragging=false;
+    dragStartY=e.clientY; dragStartPos=pos;
+    try{ viewport.setPointerCapture(e.pointerId); }catch(_){}
+  });
+  viewport.addEventListener("pointermove",e=>{
+    if(!pDown) return;
+    const dy=e.clientY-dragStartY;
+    if(!dragMoved && Math.abs(dy)>DRAG_THRESH){ dragMoved=true; dragging=true; viewport.classList.add("dragging"); }
+    if(dragMoved){
+      pos=Math.max(0,Math.min(maxScroll(), dragStartPos-dy));
+      viewport.scrollTop=pos; estimate();
+    }
+  });
+  function endPointer(){
+    if(!pDown) return; pDown=false;
+    if(dragMoved){ dragging=false; viewport.classList.remove("dragging"); }
+    else { if(bar.classList.contains("hidden")) showBar(); else { closePanel(); hideBar(); } }
+    dragMoved=false;
+  }
+  viewport.addEventListener("pointerup",endPointer);
+  viewport.addEventListener("pointercancel",endPointer);
   $("peek").addEventListener("click",showBar);
 
   document.addEventListener("keydown",e=>{
